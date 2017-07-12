@@ -78,12 +78,15 @@ public class PostActivity extends AppCompatActivity {
 
     private void startPosting() {
         mProgressDialog.setMessage("Post upload to blog");
-        mProgressDialog.show();
+
 
         final String title = mPostTitle.getText().toString().trim();
         final String description = mPostDescription.getText().toString().trim();
 
         if (!TextUtils.isEmpty(title) && !TextUtils.isEmpty(description) && mImageUri != null) {
+
+            mProgressDialog.show();
+
             StorageReference filePath = mStorageRef.child("BlogImages").child(mImageUri.getLastPathSegment());
 
             filePath.putFile(mImageUri).addOnSuccessListener(new OnSuccessListener<UploadTask.TaskSnapshot>() {
@@ -94,7 +97,7 @@ public class PostActivity extends AppCompatActivity {
                     DatabaseReference newPost = mDatabaseRef.push();
 
                     newPost.child("title").setValue(title);
-                    newPost.child("description").setValue(description);
+                    newPost.child("desc").setValue(description);
                     newPost.child("image").setValue(downloadUrl.toString());
 //                    newPost.child("uId").setValue(FirebaseAuth.getCurrentuID);
 
