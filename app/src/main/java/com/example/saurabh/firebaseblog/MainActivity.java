@@ -15,12 +15,16 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.firebase.ui.database.FirebaseRecyclerAdapter;
 import com.google.firebase.FirebaseApp;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
 import com.squareup.picasso.Picasso;
 
 public class MainActivity extends AppCompatActivity {
@@ -36,6 +40,7 @@ public class MainActivity extends AppCompatActivity {
 
     // Create a database reference from our app
     DatabaseReference mDatabaseRef = Database.getReference().child("Blog");
+    DatabaseReference mDatabaseUsers = Database.getReference().child("Users");
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -62,6 +67,8 @@ public class MainActivity extends AppCompatActivity {
 
             }
         };
+
+        mDatabaseUsers.keepSynced(true);
 
         FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
 
@@ -116,6 +123,8 @@ public class MainActivity extends AppCompatActivity {
     protected void onStart() {
         super.onStart();
 
+        checkUserExits();
+
         mAuth.addAuthStateListener(mAuthList);
 
         FirebaseRecyclerAdapter<Blog, BlogViewHolder> firebaseRecyclerAdapter = new
@@ -130,15 +139,43 @@ public class MainActivity extends AppCompatActivity {
 
                         viewHolder.setTitle(model.getTitle());
                         viewHolder.setDesc(model.getDesc());
-                        viewHolder.setImage(getApplicationContext(),model.getImage());
+                        viewHolder.setImage(getApplicationContext(), model.getImage());
 
                     }
                 };
 
-                mBlogList.setAdapter(firebaseRecyclerAdapter);
+        mBlogList.setAdapter(firebaseRecyclerAdapter);
     }
 
-    public static class BlogViewHolder extends RecyclerView.ViewHolder{
+    private void checkUserExits() {
+
+        if (mAuth.getCurrentUser() != null) {
+            final String user_id = mAuth.getCurrentUser().getUid();
+
+            mDatabaseUsers.addValueEventListener(new ValueEventListener() {
+                @Override
+                public void onDataChange(DataSnapshot dataSnapshot) {
+
+                    if (dataSnapshot.hasChild(user_id)) {
+
+                        Intent setupIntent = new Intent(MainActivity.this, SetupActivity.class);
+                        setupIntent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+                        startActivity(setupIntent);
+
+                    }
+
+                }
+
+                @Override
+                public void onCancelled(DatabaseError databaseError) {
+
+                }
+            });
+        }
+
+    }
+
+    public static class BlogViewHolder extends RecyclerView.ViewHolder {
 
         View mView;
 
