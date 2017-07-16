@@ -16,7 +16,13 @@
         app:showAsAction="never" />
 
     <item
+        android:id="@+id/action_profile"
+        android:title="Blog"
+        app:showAsAction="never" />
+
+    <item
         android:id="@+id/action_logout"
         android:title="Log Out"
         app:showAsAction="never" />
+
 </menu>

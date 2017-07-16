@@ -14,6 +14,7 @@ import android.util.Log;
 import android.view.View;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -25,6 +26,7 @@ import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.Query;
 import com.google.firebase.database.ValueEventListener;
 import com.squareup.picasso.Callback;
 import com.squareup.picasso.NetworkPolicy;
@@ -37,6 +39,8 @@ public class MainActivity extends AppCompatActivity {
     private RecyclerView mBlogList;
     FirebaseAuth mAuth;
     FirebaseAuth.AuthStateListener mAuthList;
+    private boolean mProcessLike = false;
+    private Query mQueryCurrentUser;
 
     // Get a non-default Database bucket
     FirebaseDatabase Database = FirebaseDatabase.getInstance();
@@ -44,6 +48,8 @@ public class MainActivity extends AppCompatActivity {
     // Create a database reference from our app
     DatabaseReference mDatabaseRef = Database.getReference().child("Blog");
     DatabaseReference mDatabaseUsers = Database.getReference().child("Users");
+    DatabaseReference mDatabaseLike = Database.getReference().child("Likes");
+    DatabaseReference mDatabaseCurrentUsers = Database.getReference().child("Blog");
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -56,6 +62,8 @@ public class MainActivity extends AppCompatActivity {
         FirebaseApp.initializeApp(context);
 
         mAuth = FirebaseAuth.getInstance();
+//        String currentUserId = mAuth.getCurrentUser().getUid();
+//        mQueryCurrentUser = mDatabaseCurrentUsers.orderByChild("uid").equalTo(currentUserId);
 
         mAuthList = new FirebaseAuth.AuthStateListener() {
             @Override
@@ -83,7 +91,9 @@ public class MainActivity extends AppCompatActivity {
         };
 
         mDatabaseUsers.keepSynced(true);
-        //mDatabaseRef.keepSynced(true);
+        mDatabaseRef.keepSynced(true);
+        mDatabaseLike.keepSynced(true);
+//        mDatabaseCurrentUsers.keepSynced(true);
 
         FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
 
@@ -129,6 +139,10 @@ public class MainActivity extends AppCompatActivity {
             logout();
         }
 
+        if (id == R.id.action_profile) {
+            startActivity(new Intent(MainActivity.this, ProfileActivity.class));
+        }
+
         return super.onOptionsItemSelected(item);
     }
 
@@ -148,6 +162,7 @@ public class MainActivity extends AppCompatActivity {
                         R.layout.blog_row,
                         BlogViewHolder.class,
                         mDatabaseRef
+                        //mQueryCurrentUser
                 ) {
                     @Override
                     protected void populateViewHolder(BlogViewHolder viewHolder, Blog model, int position) {
@@ -159,12 +174,49 @@ public class MainActivity extends AppCompatActivity {
                         viewHolder.setImage(getApplicationContext(), model.getImage());
                         viewHolder.setUsername(model.getUsername());
 
+                        viewHolder.setLikeBtn(post_key);
+
                         viewHolder.mView.setOnClickListener(new View.OnClickListener() {
                             @Override
                             public void onClick(View v) {
 
-                                Toast.makeText(MainActivity.this, "You Clicked a View " + post_key, Toast.LENGTH_SHORT).show();
-                                
+//                                Toast.makeText(MainActivity.this, "You Clicked a View " + post_key, Toast.LENGTH_SHORT).show();
+                                Intent singleBlogIntent = new Intent(MainActivity.this, BlogSingleActivity.class);
+                                singleBlogIntent.putExtra("blog_id", post_key);
+                                startActivity(singleBlogIntent);
+
+                            }
+                        });
+
+                        viewHolder.mLikeBtn.setOnClickListener(new View.OnClickListener() {
+                            @Override
+                            public void onClick(View v) {
+
+                                mProcessLike = true;
+
+                                    mDatabaseLike.addValueEventListener(new ValueEventListener() {
+                                        @Override
+                                        public void onDataChange(DataSnapshot dataSnapshot) {
+
+                                            if (mProcessLike) {
+
+                                                if (dataSnapshot.child(post_key).hasChild(mAuth.getCurrentUser().getUid())) {
+                                                    mDatabaseLike.child(post_key).child(mAuth.getCurrentUser().getUid()).removeValue();
+                                                    mProcessLike = false;
+                                                } else {
+                                                    mDatabaseLike.child(post_key).child(mAuth.getCurrentUser().getUid()).setValue("RandomValue");
+//                                                mDatabaseLike.child(post_key).child(mAuth.getCurrentUser().getUid()).push().setValue("RandomValue");
+                                                    mProcessLike = false;
+                                                }
+                                            }
+
+                                        }
+
+                                        @Override
+                                        public void onCancelled(DatabaseError databaseError) {
+
+                                        }
+                                    });
                             }
                         });
 
@@ -192,7 +244,6 @@ public class MainActivity extends AppCompatActivity {
                         startActivity(new Intent(MainActivity.this, SetupActivity.class));
 
                     }
-
                 }
 
                 @Override
@@ -201,18 +252,29 @@ public class MainActivity extends AppCompatActivity {
                 }
             });
         }
-
     }
 
     public static class BlogViewHolder extends RecyclerView.ViewHolder {
 
         View mView;
         //TextView post_title;
+        ImageButton mLikeBtn;
+        FirebaseAuth mAuth;
+
+        // Get a non-default Database bucket
+        FirebaseDatabase Database = FirebaseDatabase.getInstance();
+
+        // Create a database reference from our app
+        DatabaseReference mDatabaseLike = Database.getReference().child("Likes");
 
         public BlogViewHolder(View itemView) {
             super(itemView);
 
             mView = itemView;
+            mLikeBtn = (ImageButton) mView.findViewById(R.id.like_btn);
+
+            mAuth = FirebaseAuth.getInstance();
+            mDatabaseLike.keepSynced(true);
 //            post_title = (TextView) mView.findViewById(R.id.post_title);
 //
 //            post_title.setOnClickListener(new View.OnClickListener() {
@@ -223,6 +285,24 @@ public class MainActivity extends AppCompatActivity {
 //
 //                }
 //            });
+        }
+
+        public void setLikeBtn(final String post_key) {
+            mDatabaseLike.addValueEventListener(new ValueEventListener() {
+                @Override
+                public void onDataChange(DataSnapshot dataSnapshot) {
+                    if (dataSnapshot.child(post_key).hasChild(mAuth.getCurrentUser().getUid())) {
+                        mLikeBtn.setImageResource(R.mipmap.ic_thumb_up_red_24dp);
+                    } else {
+                        mLikeBtn.setImageResource(R.mipmap.ic_thumb_up_black_24dp);
+                    }
+                }
+
+                @Override
+                public void onCancelled(DatabaseError databaseError) {
+
+                }
+            });
         }
 
         public void setTitle(String title) {
