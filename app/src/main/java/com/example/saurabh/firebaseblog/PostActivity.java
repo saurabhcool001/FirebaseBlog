@@ -7,6 +7,7 @@ import android.net.Uri;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.text.TextUtils;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
@@ -14,6 +15,8 @@ import android.widget.ImageButton;
 
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.firebase.FirebaseApp;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.storage.FirebaseStorage;
@@ -82,6 +85,9 @@ public class PostActivity extends AppCompatActivity {
 
         final String title = mPostTitle.getText().toString().trim();
         final String description = mPostDescription.getText().toString().trim();
+        final String[] uid = new String[1];
+        final String[] name = new String[1];
+        final String[] email = new String[1];
 
         if (!TextUtils.isEmpty(title) && !TextUtils.isEmpty(description) && mImageUri != null) {
 
@@ -96,13 +102,31 @@ public class PostActivity extends AppCompatActivity {
 
                     DatabaseReference newPost = mDatabaseRef.push();
 
-                    newPost.child("title").setValue(title);
-                    newPost.child("desc").setValue(description);
-                    newPost.child("image").setValue(downloadUrl.toString());
+
+                    FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+                    if (user != null) {
+                        // Name, email address, and profile photo Url
+                        name[0] = user.getDisplayName();
+                        email[0] = user.getEmail();
+
+
+                        // The user's ID, unique to the Firebase project. Do NOT use this value to
+                        // authenticate with your backend server, if you have one. Use
+                        // FirebaseUser.getToken() instead.
+                        uid[0] = user.getUid();
+
+                        newPost.child("title").setValue(title);
+                        newPost.child("desc").setValue(description);
+                        newPost.child("image").setValue(downloadUrl.toString());
+                        newPost.child("uid").setValue(uid[0]);
+                        //newPost.child("username").setValue(name[0]);
+                        newPost.child("username").setValue(email[0]);
+
+                        Log.i("user_detail", "onSuccess: " + name[0] + "  " + uid[0]);
 //                    newPost.child("uId").setValue(FirebaseAuth.getCurrentuID);
 
-                    mProgressDialog.dismiss();
-
+                        mProgressDialog.dismiss();
+                    }
                     startActivity(new Intent(PostActivity.this, MainActivity.class));
                 }
             });

@@ -137,6 +137,7 @@ public class LoginActivity extends AppCompatActivity {
                         checkUserExits();
                         mProgress.dismiss();
                     } else {
+                        mProgress.dismiss();
                         Toast.makeText(LoginActivity.this, "Login Error", Toast.LENGTH_SHORT).show();
                     }
                 }

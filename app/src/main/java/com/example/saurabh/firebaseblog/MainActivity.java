@@ -10,6 +10,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
+import android.util.Log;
 import android.view.View;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -25,6 +26,8 @@ import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
+import com.squareup.picasso.Callback;
+import com.squareup.picasso.NetworkPolicy;
 import com.squareup.picasso.Picasso;
 
 public class MainActivity extends AppCompatActivity {
@@ -53,22 +56,34 @@ public class MainActivity extends AppCompatActivity {
         FirebaseApp.initializeApp(context);
 
         mAuth = FirebaseAuth.getInstance();
+
         mAuthList = new FirebaseAuth.AuthStateListener() {
             @Override
             public void onAuthStateChanged(@NonNull FirebaseAuth firebaseAuth) {
 
-                if (firebaseAuth.getCurrentUser() == null) {
+                if (mAuth.getCurrentUser() == null) {
+
+                    Toast.makeText(MainActivity.this, "No user id", Toast.LENGTH_SHORT).show();
 
                     Intent loginIntent = new Intent(MainActivity.this, LoginActivity.class);
                     loginIntent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
                     startActivity(loginIntent);
 
                 }
+                else {
+
+                    Log.i("User_ID", "user_ID: " + firebaseAuth.getCurrentUser().getUid() +
+                    "  user_email : " + firebaseAuth.getCurrentUser().getEmail()+
+                    " user_name");
+                    //Toast.makeText(MainActivity.this, "In get 1", Toast.LENGTH_SHORT).show();
+                    //startActivity(new Intent(MainActivity.this, SetupActivity.class));
+                }
 
             }
         };
 
         mDatabaseUsers.keepSynced(true);
+        //mDatabaseRef.keepSynced(true);
 
         FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
 
@@ -83,6 +98,8 @@ public class MainActivity extends AppCompatActivity {
                         .setAction("Action", null).show();
             }
         });
+
+        //checkUserExits();
     }
 
     @Override
@@ -123,8 +140,6 @@ public class MainActivity extends AppCompatActivity {
     protected void onStart() {
         super.onStart();
 
-        checkUserExits();
-
         mAuth.addAuthStateListener(mAuthList);
 
         FirebaseRecyclerAdapter<Blog, BlogViewHolder> firebaseRecyclerAdapter = new
@@ -137,9 +152,21 @@ public class MainActivity extends AppCompatActivity {
                     @Override
                     protected void populateViewHolder(BlogViewHolder viewHolder, Blog model, int position) {
 
+                        final String post_key = getRef(position).getKey();
+
                         viewHolder.setTitle(model.getTitle());
                         viewHolder.setDesc(model.getDesc());
                         viewHolder.setImage(getApplicationContext(), model.getImage());
+                        viewHolder.setUsername(model.getUsername());
+
+                        viewHolder.mView.setOnClickListener(new View.OnClickListener() {
+                            @Override
+                            public void onClick(View v) {
+
+                                Toast.makeText(MainActivity.this, "You Clicked a View " + post_key, Toast.LENGTH_SHORT).show();
+                                
+                            }
+                        });
 
                     }
                 };
@@ -155,12 +182,14 @@ public class MainActivity extends AppCompatActivity {
             mDatabaseUsers.addValueEventListener(new ValueEventListener() {
                 @Override
                 public void onDataChange(DataSnapshot dataSnapshot) {
-
+                    Log.i("Main", "onDataChange: " + user_id);
                     if (dataSnapshot.hasChild(user_id)) {
-
-                        Intent setupIntent = new Intent(MainActivity.this, SetupActivity.class);
-                        setupIntent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
-                        startActivity(setupIntent);
+                        Log.i("Main", "onDataChange: 1 " + user_id);
+                        //Toast.makeText(MainActivity.this, "In app 2", Toast.LENGTH_SHORT).show();
+//                        Intent setupIntent = new Intent(MainActivity.this, SetupActivity.class);
+//                        setupIntent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+//                        startActivity(setupIntent);
+                        startActivity(new Intent(MainActivity.this, SetupActivity.class));
 
                     }
 
@@ -178,11 +207,22 @@ public class MainActivity extends AppCompatActivity {
     public static class BlogViewHolder extends RecyclerView.ViewHolder {
 
         View mView;
+        //TextView post_title;
 
         public BlogViewHolder(View itemView) {
             super(itemView);
 
             mView = itemView;
+//            post_title = (TextView) mView.findViewById(R.id.post_title);
+//
+//            post_title.setOnClickListener(new View.OnClickListener() {
+//                @Override
+//                public void onClick(View v) {
+//
+//                    Log.i("MAIN_ACTIVITY", "post_title_click");
+//
+//                }
+//            });
         }
 
         public void setTitle(String title) {
@@ -199,9 +239,19 @@ public class MainActivity extends AppCompatActivity {
 
         }
 
+
+
         public void setImage(Context context, String image) {
             ImageView post_image = (ImageView) mView.findViewById(R.id.post_Image);
-            Picasso.with(context).load(image).into(post_image);
+           Picasso.with(context).load(image).into(post_image);
+
+
+        }
+
+        public void setUsername(String username) {
+
+            TextView post_username = (TextView) mView.findViewById(R.id.post_username);
+            post_username.setText(username);
         }
     }
 
