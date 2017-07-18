@@ -154,7 +154,7 @@ public class MainActivity extends AppCompatActivity {
     protected void onStart() {
         super.onStart();
 
-        mAuth.addAuthStateListener(mAuthList);
+        //mAuth.addAuthStateListener(mAuthList);
 
         FirebaseRecyclerAdapter<Blog, BlogViewHolder> firebaseRecyclerAdapter = new
                 FirebaseRecyclerAdapter<Blog, BlogViewHolder>(

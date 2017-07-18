@@ -41,10 +41,11 @@ public class ProfileActivity extends AppCompatActivity {
     FirebaseDatabase Database = FirebaseDatabase.getInstance();
 
     // Create a database reference from our app
-    //DatabaseReference mDatabaseRef = Database.getReference().child("Blog");
+    DatabaseReference mDatabaseRef = Database.getReference().child("Blog");
     DatabaseReference mDatabaseUsers = Database.getReference().child("Users");
     DatabaseReference mDatabaseLike = Database.getReference().child("Likes");
     DatabaseReference mDatabaseCurrentUsers = Database.getReference().child("Blog");
+    String currentUserId;
 
 
     @Override
@@ -55,14 +56,17 @@ public class ProfileActivity extends AppCompatActivity {
         context = getApplicationContext();
         FirebaseApp.initializeApp(context);
 
+        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+
         mAuth = FirebaseAuth.getInstance();
 //
-        String currentUserId = mAuth.getCurrentUser().getUid();
+        currentUserId = mAuth.getCurrentUser().getUid();
         mQueryCurrentUser = mDatabaseCurrentUsers.orderByChild("uid").equalTo(currentUserId);
+        //Toast.makeText(this, "CurrentUser : " + currentUserId, Toast.LENGTH_SHORT).show();
 //
-        mDatabaseUsers.keepSynced(true);
-//        mDatabaseRef.keepSynced(true);
-//        mDatabaseLike.keepSynced(true);
+        //mDatabaseUsers.keepSynced(true);
+        mDatabaseRef.keepSynced(true);
+        mDatabaseLike.keepSynced(true);
         mDatabaseCurrentUsers.keepSynced(true);
 //
         mBlogList = (RecyclerView) findViewById(R.id.blog_list);
@@ -72,20 +76,28 @@ public class ProfileActivity extends AppCompatActivity {
     }
 
     @Override
+    public boolean onSupportNavigateUp(){
+        //finish();
+        startActivity(new Intent(ProfileActivity.this, MainActivity.class));
+        return true;
+    }
+
+    @Override
     protected void onStart() {
         super.onStart();
 
-        mAuth.addAuthStateListener(mAuthList);
+        Toast.makeText(this, "user onStart : " + currentUserId, Toast.LENGTH_SHORT).show();
+        //mAuth.addAuthStateListener(mAuthList);
 
         FirebaseRecyclerAdapter<Blog, ProfileActivity.BlogViewHolder1> firebaseRecyclerAdapter = new
-                FirebaseRecyclerAdapter<Blog, ProfileActivity.BlogViewHolder1>(
+                FirebaseRecyclerAdapter<Blog, BlogViewHolder1>(
                         Blog.class,
                         R.layout.blog_row,
                         ProfileActivity.BlogViewHolder1.class,
                         mQueryCurrentUser
                 ) {
                     @Override
-                    protected void populateViewHolder(ProfileActivity.BlogViewHolder1 viewHolder, Blog model, int position) {
+                    protected void populateViewHolder(BlogViewHolder1 viewHolder, Blog model, int position) {
 
                         final String post_key = getRef(position).getKey();
 
@@ -102,7 +114,12 @@ public class ProfileActivity extends AppCompatActivity {
 
 //                                Toast.makeText(MainActivity.this, "You Clicked a View " + post_key, Toast.LENGTH_SHORT).show();
                                 Intent singleBlogIntent = new Intent(ProfileActivity.this, BlogSingleActivity.class);
-                                singleBlogIntent.putExtra("blog_id", post_key);
+                                //singleBlogIntent.putExtra("blog_id", post_key);
+                                Bundle extras = new Bundle();
+                                extras.putString("blog_id", post_key);
+                                extras.putString("blog_intent", "ProfileActivity");
+                                singleBlogIntent.putExtras(extras);
+                                Log.i("intent_value ", "onClick: " + extras);
                                 startActivity(singleBlogIntent);
 
                             }
@@ -144,6 +161,8 @@ public class ProfileActivity extends AppCompatActivity {
                 };
 
         mBlogList.setAdapter(firebaseRecyclerAdapter);
+
+
     }
 
     public static class BlogViewHolder1 extends RecyclerView.ViewHolder {
@@ -158,6 +177,7 @@ public class ProfileActivity extends AppCompatActivity {
 
         // Create a database reference from our app
         DatabaseReference mDatabaseLike = Database.getReference().child("Likes");
+
 
         public BlogViewHolder1(View itemView) {
             super(itemView);

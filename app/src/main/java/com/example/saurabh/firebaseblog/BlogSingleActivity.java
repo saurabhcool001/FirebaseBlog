@@ -33,6 +33,8 @@ public class BlogSingleActivity extends AppCompatActivity {
 
     // Create a database reference from our app
     DatabaseReference mDatabaseRef = Database.getReference().child("Blog");
+    public String mblog_intent;
+    //final String mblog_intent = getIntent().getExtras().getString("blog_intent");
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -42,6 +44,8 @@ public class BlogSingleActivity extends AppCompatActivity {
         context = getApplicationContext();
         FirebaseApp.initializeApp(context);
 
+        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+
         mAuth = FirebaseAuth.getInstance();
 
         mSingleBlogImage = (ImageView) findViewById(R.id.single_blog_image);
@@ -50,6 +54,7 @@ public class BlogSingleActivity extends AppCompatActivity {
         mSingleRemoveBtn = (Button) findViewById(R.id.single_remove_btn);
 
         final String mPost_key = getIntent().getExtras().getString("blog_id");
+        mblog_intent = getIntent().getExtras().getString("blog_intent");
         //Toast.makeText(this, "post_key : " + post_key, Toast.LENGTH_SHORT).show();
 
         mDatabaseRef.child(mPost_key).addValueEventListener(new ValueEventListener() {
@@ -92,4 +97,21 @@ public class BlogSingleActivity extends AppCompatActivity {
         });
     }
 
+    @Override
+    public boolean onSupportNavigateUp() {
+        //finish();
+        if (mblog_intent != null) {
+            startActivity(new Intent(BlogSingleActivity.this, ProfileActivity.class));
+        }
+        return true;
+    }
+
+    //   @Override
+//    public void onBackPressed()
+//    {
+//        if (mblog_intent != null) {
+//            Intent intent = new Intent(BlogSingleActivity.this, ProfileActivity.class);
+//            startActivity(intent);
+//        }
+//    }
 }
